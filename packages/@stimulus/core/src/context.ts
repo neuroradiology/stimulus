@@ -1,28 +1,28 @@
-import { Action } from "./action"
-import { ActionObserver, ActionObserverDelegate } from "./action_observer"
 import { Application } from "./application"
+import { BindingObserver } from "./binding_observer"
 import { Controller } from "./controller"
+import { Dispatcher } from "./dispatcher"
 import { ErrorHandler } from "./error_handler"
-import { EventListenerSet } from "./event_listener_set"
 import { Module } from "./module"
 import { Schema } from "./schema"
 import { Scope } from "./scope"
+import { ValueObserver } from "./value_observer"
 
-export class Context implements ErrorHandler, ActionObserverDelegate {
+export class Context implements ErrorHandler {
   readonly module: Module
   readonly scope: Scope
   readonly controller: Controller
-  private actionObserver: ActionObserver
-  private eventListeners: EventListenerSet
+  private bindingObserver: BindingObserver
+  private valueObserver: ValueObserver
 
   constructor(module: Module, scope: Scope) {
     this.module = module
     this.scope = scope
-    this.actionObserver = new ActionObserver(this.element, this.schema, this)
-    this.eventListeners = new EventListenerSet(this)
+    this.controller = new module.controllerConstructor(this)
+    this.bindingObserver = new BindingObserver(this, this.dispatcher)
+    this.valueObserver = new ValueObserver(this, this.controller)
 
     try {
-      this.controller = new module.controllerConstructor(this)
       this.controller.initialize()
     } catch (error) {
       this.handleError(error, "initializing controller")
@@ -30,8 +30,8 @@ export class Context implements ErrorHandler, ActionObserverDelegate {
   }
 
   connect() {
-    this.actionObserver.start()
-    this.eventListeners.start()
+    this.bindingObserver.start()
+    this.valueObserver.start()
 
     try {
       this.controller.connect()
@@ -47,8 +47,8 @@ export class Context implements ErrorHandler, ActionObserverDelegate {
       this.handleError(error, "disconnecting controller")
     }
 
-    this.eventListeners.stop()
-    this.actionObserver.stop()
+    this.valueObserver.stop()
+    this.bindingObserver.stop()
   }
 
   get application(): Application {
@@ -63,24 +63,16 @@ export class Context implements ErrorHandler, ActionObserverDelegate {
     return this.application.schema
   }
 
+  get dispatcher(): Dispatcher {
+    return this.application.dispatcher
+  }
+
   get element(): Element {
     return this.scope.element
   }
 
   get parentElement(): Element | null {
     return this.element.parentElement
-  }
-
-  // Inline action observer delegate
-
-  /** @private */
-  actionConnected(action: Action) {
-    this.eventListeners.addEventListenerForAction(action)
-  }
-
-  /** @private */
-  actionDisconnected(action: Action) {
-    this.eventListeners.deleteEventListenerForAction(action)
   }
 
   // Error handling

@@ -1,6 +1,6 @@
 {
   "name": "@stimulus/core",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Stimulus JavaScript framework: Core library",
   "repository": "https://github.com/stimulusjs/stimulus",
   "author": "Basecamp, LLC",
@@ -9,20 +9,21 @@
     "Javan Makhmali <javan@javan.us>",
     "Sam Stephenson <sstephenson@gmail.com>"
   ],
-  "main": "dist/module/index.js",
-  "types": "dist/types/index.d.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "dependencies": {
-    "@stimulus/mutation-observers": "^1.0.0"
+    "@stimulus/mutation-observers": "^2.0.0"
   },
-  "files": [
-    "dist"
-  ],
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "@stimulus/test": "^1.0.1",
-    "@types/webpack-env": "^1.13.3"
+    "@stimulus/polyfills": "^2.0.0",
+    "@stimulus/test": "^2.0.0"
+  },
+  "scripts": {
+    "clean": "rimraf dist *.tsbuildinfo"
   }
 }

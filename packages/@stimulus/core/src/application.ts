@@ -1,13 +1,17 @@
 import { Controller, ControllerConstructor } from "./controller"
 import { Definition } from "./definition"
+import { Dispatcher } from "./dispatcher"
 import { ErrorHandler } from "./error_handler"
+import { Logger } from "./logger"
 import { Router } from "./router"
 import { Schema, defaultSchema } from "./schema"
 
 export class Application implements ErrorHandler {
   readonly element: Element
   readonly schema: Schema
-  private router: Router
+  readonly dispatcher: Dispatcher
+  readonly router: Router
+  logger: Logger = console
 
   static start(element?: Element, schema?: Schema): Application {
     const application = new Application(element, schema)
@@ -18,14 +22,18 @@ export class Application implements ErrorHandler {
   constructor(element: Element = document.documentElement, schema: Schema = defaultSchema) {
     this.element = element
     this.schema = schema
+    this.dispatcher = new Dispatcher(this)
     this.router = new Router(this)
   }
 
-  start() {
+  async start() {
+    await domReady()
+    this.dispatcher.start()
     this.router.start()
   }
 
   stop() {
+    this.dispatcher.stop()
     this.router.stop()
   }
 
@@ -33,15 +41,15 @@ export class Application implements ErrorHandler {
     this.load({ identifier, controllerConstructor })
   }
 
-  load(...definitions: Definition[])
-  load(definitions: Definition[])
+  load(...definitions: Definition[]): void
+  load(definitions: Definition[]): void
   load(head: Definition | Definition[], ...rest: Definition[]) {
     const definitions = Array.isArray(head) ? head : [head, ...rest]
     definitions.forEach(definition => this.router.loadDefinition(definition))
   }
 
-  unload(...identifiers: string[])
-  unload(identifiers: string[])
+  unload(...identifiers: string[]): void
+  unload(identifiers: string[]): void
   unload(head: string | string[], ...rest: string[]) {
     const identifiers = Array.isArray(head) ? head : [head, ...rest]
     identifiers.forEach(identifier => this.router.unloadIdentifier(identifier))
@@ -61,6 +69,16 @@ export class Application implements ErrorHandler {
   // Error handling
 
   handleError(error: Error, message: string, detail: object) {
-    console.error(`%s\n\n%o\n\n%o`, message, error, detail)
+    this.logger.error(`%s\n\n%o\n\n%o`, message, error, detail)
   }
+}
+
+function domReady(): Promise<any> {
+  return new Promise(resolve => {
+    if (document.readyState == "loading") {
+      document.addEventListener("DOMContentLoaded", resolve)
+    } else {
+      resolve()
+    }
+  })
 }

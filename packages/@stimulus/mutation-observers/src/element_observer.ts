@@ -2,9 +2,9 @@ export interface ElementObserverDelegate {
   matchElement(element: Element): boolean
   matchElementsInTree(tree: Element): Element[]
 
-  elementMatched?(element: Element)
-  elementUnmatched?(element: Element)
-  elementAttributeChanged?(element: Element, attributeName: string)
+  elementMatched?(element: Element): void
+  elementUnmatched?(element: Element): void
+  elementAttributeChanged?(element: Element, attributeName: string): void
 }
 
 export class ElementObserver {
@@ -15,7 +15,7 @@ export class ElementObserver {
   private elements: Set<Element>
   private mutationObserver: MutationObserver
 
-  constructor(element, delegate) {
+  constructor(element: Element, delegate: ElementObserverDelegate) {
     this.element = element
     this.started = false
     this.delegate = delegate
@@ -26,8 +26,8 @@ export class ElementObserver {
 
   start() {
     if (!this.started) {
-      this.mutationObserver.observe(this.element, { attributes: true, childList: true, subtree: true })
       this.started = true
+      this.mutationObserver.observe(this.element, { attributes: true, childList: true, subtree: true })
       this.refresh()
     }
   }
@@ -59,8 +59,10 @@ export class ElementObserver {
   // Mutation record processing
 
   private processMutations(mutations: MutationRecord[]) {
-    for (const mutation of mutations) {
-      this.processMutation(mutation)
+    if (this.started) {
+      for (const mutation of mutations) {
+        this.processMutation(mutation)
+      }
     }
   }
 
@@ -88,13 +90,19 @@ export class ElementObserver {
 
   private processRemovedNodes(nodes: NodeList) {
     for (const node of Array.from(nodes)) {
-      this.processNode(node, this.removeElement)
+      const element = this.elementFromNode(node)
+      if (element) {
+        this.processTree(element, this.removeElement)
+      }
     }
   }
 
   private processAddedNodes(nodes: NodeList) {
     for (const node of Array.from(nodes)) {
-      this.processNode(node, this.addElement)
+      const element = this.elementFromNode(node)
+      if (element && this.elementIsActive(element)) {
+        this.processTree(element, this.addElement)
+      }
     }
   }
 
@@ -108,12 +116,9 @@ export class ElementObserver {
     return this.delegate.matchElementsInTree(tree)
   }
 
-  private processNode(node: Node, processor: (element: Element) => void) {
-    const tree = this.elementFromNode(node)
-    if (tree) {
-      for (const element of this.matchElementsInTree(tree)) {
-        processor.call(this, element)
-      }
+  private processTree(tree: Element, processor: (element: Element) => void) {
+    for (const element of this.matchElementsInTree(tree)) {
+      processor.call(this, element)
     }
   }
 
@@ -123,13 +128,23 @@ export class ElementObserver {
     }
   }
 
+  private elementIsActive(element: Element): boolean {
+    if (element.isConnected != this.element.isConnected) {
+      return false
+    } else {
+      return this.element.contains(element)
+    }
+  }
+
   // Element tracking
 
   private addElement(element: Element) {
     if (!this.elements.has(element)) {
-      this.elements.add(element)
-      if (this.delegate.elementMatched) {
-        this.delegate.elementMatched(element)
+      if (this.elementIsActive(element)) {
+        this.elements.add(element)
+        if (this.delegate.elementMatched) {
+          this.delegate.elementMatched(element)
+        }
       }
     }
   }

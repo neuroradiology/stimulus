@@ -1,9 +1,9 @@
 import { ElementObserver, ElementObserverDelegate } from "./element_observer"
 
 export interface AttributeObserverDelegate {
-  elementMatchedAttribute?(element: Element, attributeName: string)
-  elementAttributeValueChanged?(element: Element, attributeName: string)
-  elementUnmatchedAttribute?(element: Element, attributeName: string)
+  elementMatchedAttribute?(element: Element, attributeName: string): void
+  elementAttributeValueChanged?(element: Element, attributeName: string): void
+  elementUnmatchedAttribute?(element: Element, attributeName: string): void
 }
 
 export class AttributeObserver implements ElementObserverDelegate {
@@ -33,6 +33,14 @@ export class AttributeObserver implements ElementObserverDelegate {
 
   stop() {
     this.elementObserver.stop()
+  }
+
+  refresh() {
+    this.elementObserver.refresh()
+  }
+
+  get started(): boolean {
+    return this.elementObserver.started
   }
 
   // Element observer delegate

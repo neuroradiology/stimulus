@@ -1,6 +1,6 @@
 {
   "name": "@stimulus/webpack-helpers",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Stimulus JavaScript framework: webpack helpers",
   "repository": "https://github.com/stimulusjs/stimulus",
   "author": "Basecamp, LLC",
@@ -8,16 +8,14 @@
     "Javan Makhmali <javan@javan.us>",
     "Sam Stephenson <sstephenson@gmail.com>"
   ],
-  "main": "dist/module/index.js",
-  "types": "dist/types/index.d.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
-  "files": [
-    "dist"
-  ],
   "publishConfig": {
     "access": "public"
   },
-  "devDependencies": {
-    "@types/webpack-env": "^1.13.3"
+  "scripts": {
+    "clean": "rimraf dist *.tsbuildinfo"
   }
 }
